@@ -1,42 +1,39 @@
 package org.firstinspires.ftc.teamcode.example.java;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.rowanmcalpin.nextftc.core.command.Command;
-import com.rowanmcalpin.nextftc.core.command.groups.ParallelGroup;
-import com.rowanmcalpin.nextftc.core.command.groups.SequentialGroup;
-import com.rowanmcalpin.nextftc.core.command.utility.delays.Delay;
-import com.rowanmcalpin.nextftc.ftc.NextFTCOpMode;
-import com.rowanmcalpin.nextftc.ftc.OpModeData;
-import com.rowanmcalpin.nextftc.ftc.gamepad.GamepadManager;
+import com.pedropathing.geometry.BezierLine;
+import com.pedropathing.geometry.Pose;
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.opencv.ColorBlobLocatorProcessor;
+import Constants.Constants;
+import dev.nextftc.extensions.pedro.FollowPath;
+import dev.nextftc.extensions.pedro.PedroComponent;
+import dev.nextftc.ftc.NextFTCOpMode;
 
-@Autonomous(name = "NextFTC Autonomous Program Java")
 public class AutonomousProgram extends NextFTCOpMode {
+    private final Pose startPose = new Pose(9.0, 111.0, Math.toRadians(-90.0));
+    private final Pose scorePose = new Pose(16.0, 128.0, Math.toRadians(-45.0));
+    private final Pose pickup1Pose = new Pose(30.0, 121.0, Math.toRadians(0.0));
+    private final Pose pickup2Pose = new Pose(30.0, 131.0, Math.toRadians(0.0));
+    private final Pose pickup3Pose = new Pose(45.0, 128.0, Math.toRadians(90.0));
+    private final Pose parkPose = new Pose(68.0, 96.0, Math.toRadians(-90.0));
     public AutonomousProgram() {
-        super(Claw.INSTANCE, Lift.INSTANCE);
-    }
-
-    public Command firstRoutine() {
-        return new SequentialGroup(
-                Lift.INSTANCE.toHigh(),
-                new ParallelGroup(
-                        Lift.INSTANCE.toMiddle(),
-                        Claw.INSTANCE.close()
-                ),
-                new Delay(0.5),
-                new ParallelGroup(
-                        Claw.INSTANCE.open(),
-                        Lift.INSTANCE.toLow()
-                )
+        addComponents(
+                new PedroComponent(Constants::createFollower)
         );
+    }
+    private FollowPath pathCommand;
+
+
+
+    @Override
+    public void onInit() {
+        pathCommand = new FollowPath(PedroComponent.follower().pathBuilder()
+                .addPath(new BezierLine(startPose, scorePose))
+                .setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading())
+                .build());
     }
 
     @Override
-    public void onStartButtonPressed() {
-        firstRoutine().invoke();
+    public void onWaitForStart() {
+        pathCommand.schedule();
     }
 }
