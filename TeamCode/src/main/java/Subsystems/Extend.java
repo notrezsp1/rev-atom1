@@ -1,51 +1,32 @@
 package Subsystems;
 
 
-
-import static Subsystems.Values.EXTEND_MAX;
-import static Subsystems.Values.EXTEND_MIN;
-
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-
-import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
-
+import dev.nextftc.control.ControlSystem;
 import dev.nextftc.core.subsystems.Subsystem;
+
+import dev.nextftc.hardware.controllable.RunToPosition;
+import dev.nextftc.hardware.impl.MotorEx;
+import dev.nextftc.core.commands.Command;
+
 
 
 public class Extend implements Subsystem {
-    public static DcMotorEx extend;
-    private static final ElapsedTime timer = new ElapsedTime();
 
+    public static final Extend INSTANCE = new Extend();
+    private Extend(){}
 
+    private MotorEx extend = new MotorEx("extend");
 
+    private ControlSystem controlSystem = ControlSystem.builder()
+            .posPid(0, 0, 0)
+            .elevatorFF(0)
+            .build();
 
-    public Extend(HardwareMap hardwareMap) {
-        extend = hardwareMap.get(DcMotorEx.class, "Linear");
-        extend.setDirection(DcMotorEx.Direction.REVERSE);
-        extend.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        extend.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        extend.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-    }
-    public static void setManualPower(double power) {
-        if (Math.abs(power) > 0.1) { // deadzone
-            extend.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            extend.setPower(Range.clip(power, -1.0, 1.0));
-        } else {
-            extend.setPower(0);
-        }
+    public Command toLow() = new RunToPosition(controlSystem,0).requires(this);
+
+    @Override
+    public void periodic() {
+        extend.setPower(controlSystem.calculate(extend.getState()));
     }
 
-    public static void toPosition(int target) {
-        extend.setTargetPosition(target);
-        extend.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        extend.setPower(1.0);
-    }
-
-
-    public static boolean update() {
-        return !extend.isBusy();
-    }
 }
